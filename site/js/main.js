@@ -7,7 +7,7 @@ import { t, lang, applyLang, onLang, num, locale } from './i18n.js';
 import * as db from './db.js';
 import { clock, observer, locate, setPlace, onPosition, bodyNow, fixedNow, raText, decText, azText } from './astro.js';
 import { loadGroup, satNow } from './sats.js';
-import { createScene } from './scene.js';
+import { createScene, createStubScene } from './scene.js';
 import * as ui from './ui.js';
 import * as sec from './security.js';
 import { initLexiAI } from './lexiai.js';
@@ -69,7 +69,27 @@ const data = {
   dso: db.deepSky(),
   bodies: db.bodies(),
 };
-const scene = createScene($('#scene'), data);
+// 3D может быть недоступно: браузер отключил WebGL после сбоя видеокарты или ускорение выключено.
+// Тогда сайт работает без сцены — модули, карточки, LexiAI и показатели защиты остаются.
+function no3dNote(key) {
+  let el = $('#no3d');
+  if (!el) { el = document.createElement('p'); el.id = 'no3d'; el.className = 'no3d-note'; el.setAttribute('role', 'status'); document.body.append(el); }
+  el.dataset.key = key;
+  el.textContent = t(key);
+  el.hidden = false;
+}
+let scene;
+try {
+  scene = createScene($('#scene'), data, {
+    onLost: () => no3dNote('no3d.lost'),
+    onRestored: () => { const el = $('#no3d'); if (el) el.hidden = true; },
+  });
+} catch (e) {
+  console.warn('3D недоступно:', e.message);
+  scene = createStubScene();
+  $('#scene').hidden = true;
+  no3dNote('no3d.blocked');
+}
 window.lexi = { scene, db };          // для отладки из консоли браузера
 
 // Состояние, к которому обращаются функции ниже (объявляем заранее)
@@ -529,6 +549,7 @@ $('#hud-toggle').addEventListener('click', () => {
 });
 $$('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang, true)));
 onLang(() => {
+  const note = $('#no3d'); if (note && !note.hidden) note.textContent = t(note.dataset.key);
   renderIndicators(); renderLayers(); renderWhere(); rebuildSearch(); updatePortalLinks(); ai.refresh();
   if (!modulesEl.hidden) ui.renderModules($('#mod-body'), modTab);
   if (selectedRef && ui.panelRef()) ui.showObject(selectedRef, { groupSource: id => groupState[id] });

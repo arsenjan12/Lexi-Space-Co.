@@ -5,7 +5,7 @@
 const I18N = {
   ru: {
     'meta.title': 'LEXI Space — ситуационный центр',
-    'nav.aria': 'Разделы', 'nav.orbit': 'Орбита', 'nav.solar': 'Солнечная система', 'nav.sky': 'Небо', 'nav.modules': 'Модули', 'nav.back': '← LEXI', 'warp.portal': 'Возвращаемся в LEXI',
+    'nav.aria': 'Разделы', 'nav.orbit': 'Орбита', 'nav.solar': 'Солнечная система', 'nav.sky': 'Небо', 'nav.modules': 'Модули', 'no3d.blocked': 'Браузер отключил 3D для этой страницы (обычно после сбоя видеокарты). Перезапустите браузер — в Chrome это адрес chrome://restart. Всё остальное работает: модули, карточки, LexiAI.', 'no3d.lost': 'Видеокарта сбросила 3D-сцену — восстанавливаем. Если сцена не вернулась, перезапустите браузер.', 'nav.back': '← LEXI', 'warp.portal': 'Возвращаемся в LEXI',
     'lang.label': 'Язык', 'search.ph': 'Сириус, МКС, M31, Марс…', 'search.open': 'Поиск', 'ui.close': 'Закрыть',
     'hud.toggle': 'Показать состояние', 'hud.short': 'Статус', 'hud.locate': 'Моё местоположение',
     'time.live': 'Реальное время', 'time.sim': 'Ускоренное время', 'time.label': 'Время', 'time.now': 'Сейчас', 'time.day': '×1д',
@@ -71,7 +71,7 @@ const I18N = {
   },
   en: {
     'meta.title': 'LEXI Space — situation center',
-    'nav.aria': 'Sections', 'nav.orbit': 'Orbit', 'nav.solar': 'Solar System', 'nav.sky': 'Sky', 'nav.modules': 'Modules', 'warp.portal': 'Back to LEXI', 'nav.back': '← LEXI',
+    'nav.aria': 'Sections', 'nav.orbit': 'Orbit', 'nav.solar': 'Solar System', 'nav.sky': 'Sky', 'nav.modules': 'Modules', 'warp.portal': 'Back to LEXI', 'no3d.blocked': 'The browser turned off 3D for this page (usually after a graphics crash). Restart the browser — in Chrome go to chrome://restart. Everything else works: modules, cards, LexiAI.', 'no3d.lost': 'The graphics card reset the 3D scene — restoring. If it does not come back, restart the browser.', 'nav.back': '← LEXI',
     'lang.label': 'Language', 'search.ph': 'Sirius, ISS, M31, Mars…', 'search.open': 'Search', 'ui.close': 'Close',
     'hud.toggle': 'Show status', 'hud.short': 'Status', 'hud.locate': 'My location',
     'time.live': 'Real time', 'time.sim': 'Accelerated time', 'time.label': 'Time', 'time.now': 'Now', 'time.day': '×1d',
