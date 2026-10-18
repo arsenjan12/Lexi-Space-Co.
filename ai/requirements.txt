@@ -1,0 +1,9 @@
+# Сначала PyTorch с CUDA 12.4 (≈ 2,5 ГБ):
+#   pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+transformers==4.46.3
+peft==0.13.2
+accelerate==1.1.1
+bitsandbytes==0.45.0
+sentencepiece
+protobuf
+numpy<2.1

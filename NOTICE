@@ -1,0 +1,27 @@
+LEXI Space
+Copyright 2026 команда LEXI
+
+Этот продукт распространяется по лицензии Apache License 2.0 (см. LICENSE).
+
+В нём используются сторонние данные и программы:
+
+Данные
+  - Каталог звёзд HYG v4.1 — David Nash / astronexus, CC BY-SA 4.0
+    https://github.com/astronexus/HYG-Database
+    (производные таблицы stars в db/seed/10_sky.sql распространяются на тех же условиях CC BY-SA 4.0)
+  - d3-celestial: имена звёзд, созвездия, каталог Мессье — Olaf Frohn, BSD-3-Clause
+    https://github.com/ofrohn/d3-celestial
+  - Орбитальные элементы — CelesTrak (celestrak.org), загружаются во время работы
+  - Околоземные астероиды — NASA NeoWs (api.nasa.gov), загружаются во время работы
+  - Индекс Kp — NOAA SWPC (swpc.noaa.gov), загружается во время работы
+  - Текстуры Земли — из портала LEXI
+
+Программы (папка site/vendor, лицензии MIT, если не указано иное)
+  - three.js, satellite.js, astronomy-engine, sql.js, KaTeX, noble-post-quantum,
+    noble-curves, noble-hashes, wllama (llama.cpp — MIT)
+
+Модель
+  - LexiAI основана на Qwen2.5-1.5B-Instruct (Alibaba Cloud, Apache License 2.0)
+
+Шрифты
+  - Cormorant, Manrope, JetBrains Mono — SIL Open Font License 1.1

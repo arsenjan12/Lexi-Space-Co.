@@ -1,0 +1,20 @@
+# Зависимости и окружения
+node_modules/
+ai/.venv/
+
+# Секреты — никогда не в репозиторий (ключ подписи, ключ NASA)
+.env
+.env.*
+
+# Исходные каталоги неба, скачиваются: npm run catalogs
+db/raw/
+# Базовая модель, llama.cpp и результаты обучения
+ai/cache/
+ai/out/
+# Модель LexiAI лежит в GitHub Releases, Netlify скачивает её при сборке
+site/models/*.gguf
+
+# Локальное
+.claude/
+.netlify/
+*.log
