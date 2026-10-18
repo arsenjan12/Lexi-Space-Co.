@@ -95,7 +95,6 @@ function human(x) {
   }
   return x.toLocaleString('ru-RU', { maximumFractionDigits: 6 });
 }
-const ORIGIN = { portal: 'портал LEXI (lexi-translations.js)', gosha: 'сервер Гоши (server.py), исправлено', space: 'LEXI Space' };
 
 function formulaSection(f, n) {
   const out = [h3(`${n}. ${f.title}`), eq(f.latex), p(f.explanation)];
@@ -113,7 +112,7 @@ function formulaSection(f, n) {
   const users = rows('SELECT * FROM links WHERE to_type = ? AND to_id = ?', ['formula', f.id])
     .map(l => `${titleOf(l.from_type, l.from_id)}${l.from_type === 'threat' ? ' (угроза)' : l.from_type === 'countermeasure' ? ' (защита)' : ''}`);
   const inds = rows('SELECT id FROM indicators WHERE formula_id = ?', [f.id]).map(i => `${titleOf('indicator', i.id)} (живой показатель)`);
-  const meta = [`Источник: ${ORIGIN[f.origin]}`, f.calc ? `в коде: formulas.js → ${f.calc}()` : 'поясняющая формула, без калькулятора'];
+  const meta = [f.calc ? `в коде: formulas.js → ${f.calc}()` : 'поясняющая формула, без калькулятора'];
   out.push(small(meta.join(' · ')));
   if (users.length || inds.length) out.push(small(`Связи: ${[...new Set([...users, ...inds])].join('; ')}`));
   return out;
@@ -270,7 +269,7 @@ algo.push(p('Потеря считается только по ответу ас
 children.push(
   new Paragraph({ spacing: { before: 2400, after: 120 }, children: [new TextRun({ text: 'LEXI · LEXI Space', size: 26, color: GOLD, bold: true, characterSpacing: 40 })] }),
   new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: 'Формулы и алгоритмы', size: 64, bold: true, color: INK, font: 'Cambria' })] }),
-  p(new TextRun({ text: 'Все формулы трёх модулей портала LEXI, формулы из сервера проекта Lexi, астрономические формулы ситуационного центра LEXI Space и алгоритмы, которые реально работают в его коде: орбиты, геометрия GNSS, фильтр Калмана, постквантовая подпись, поиск и обучение LexiAI.', size: 24, color: MUTE }), { spacing: { after: 480, line: 340 } }),
+  p(new TextRun({ text: 'Все формулы трёх модулей портала LEXI, формулы орбитальной механики и астрономии ситуационного центра LEXI Space и алгоритмы, которые реально работают в его коде: орбиты, геометрия GNSS, фильтр Калмана, постквантовая подпись, поиск и обучение LexiAI.', size: 24, color: MUTE }), { spacing: { after: 480, line: 340 } }),
   table(null, [
     ['Формул', String(FORMULAS.length)],
     ['С калькулятором на сайте', String(FORMULAS.filter(f => f.calc).length)],
@@ -287,7 +286,7 @@ children.push(
 children.push(
   h1('Как устроен документ'),
   p('Формулы разложены по модулям портала LEXI. У каждой — запись, пояснение, таблица параметров со значениями по умолчанию, пример расчёта (посчитан тем же кодом, что работает на сайте) и связи: от какой угрозы защищает, в какой защите используется.'),
-  p('Дальше — формулы из сервера проекта Lexi (с исправлениями), астрономические формулы для карточек объектов и алгоритмы LEXI Space: как сайт считает положения спутников, геометрию GNSS, фильтр Калмана по геолокации, проверяет подписи и ищет ответы для LexiAI.'),
+  p('Дальше — формулы орбитальной механики и астрономии для карточек объектов и алгоритмы LEXI Space: как сайт считает положения спутников, геометрию GNSS, фильтр Калмана по геолокации, проверяет подписи и ищет ответы для LexiAI.'),
   p([b('Где это в коде. '), new TextRun('Формулы и параметры — в базе: '), code('db/seed/01_logic.sql'), new TextRun(' (таблицы formulas, formula_params, links). Калькуляторы — '), code('site/js/formulas.js'), new TextRun('. Алгоритмы — в файлах, указанных в каждом разделе.')]),
 );
 
@@ -312,20 +311,10 @@ for (const m of MODULES) {
   }
 }
 
-// Гоша и астрономия
-children.push(h1('Формулы сервера Lexi и астрономия LEXI Space'),
-  h2('Из сервера проекта Lexi (server.py)'),
-  p('Формулы класса AstrophysicsCalculator перенесены в LEXI Space. Что исправлено при переносе:'),
-  bullet([b('Орбитальная скорость: '), new TextRun('результат умножался на 1000 и назывался км/с — множитель убран.')]),
-  bullet([b('Первая космическая: '), new TextRun('расстояние до спутника Земли бралось в астрономических единицах — теперь в километрах.')]),
-  bullet([b('Доплер: '), new TextRun('совпадает с формулой модуля 2, используется она.')]),
-  bullet([b('Фильтр Калмана GNSS: '), new TextRun('update() возвращала кортеж из одного элемента, а вызывающий код распаковывал его в две переменные — переписан, см. алгоритм 6 ниже.')]),
-);
+// Астрономия и орбитальная механика
+children.push(h1('Астрономия и орбитальная механика'), p('Формулы для карточек небесных объектов и орбит спутников.'));
 let n = 0;
-for (const f of FORMULAS.filter(f => f.origin === 'gosha')) children.push(...formulaSection(f, `Г.${++n}`));
-children.push(h2('Для карточек небесных объектов'));
-n = 0;
-for (const f of FORMULAS.filter(f => f.origin === 'space')) children.push(...formulaSection(f, `А.${++n}`));
+for (const f of FORMULAS.filter(f => !f.module_id)) children.push(...formulaSection(f, `А.${++n}`));
 
 children.push(...algo);
 
@@ -333,7 +322,7 @@ children.push(...algo);
 children.push(h1('Сводная таблица формул'),
   table(['№', 'Формула', 'Раздел', 'Функция на сайте'],
     FORMULAS.map((f, i) => [String(i + 1), f.title,
-      f.module_id ? `Модуль ${MODULES.find(m => m.id === f.module_id).num}` : f.origin === 'gosha' ? 'server.py' : 'Астрономия',
+      f.module_id ? `Модуль ${MODULES.find(m => m.id === f.module_id).num}` : 'Астрономия',
       f.calc ? `${f.calc}()` : '—']),
     [600, 4738, 1700, 2600]));
 

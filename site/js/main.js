@@ -102,8 +102,9 @@ function loop() {
   requestAnimationFrame(loop);
 }
 function renderClock(date) {
-  $('#clock').textContent = date.toISOString().slice(11, 19);
-  $('#clock-date').textContent = `UTC · ${date.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  // Крупно — местное время человека, мелко — дата и UTC (по UTC живут орбиты и эфемериды)
+  $('#clock').textContent = date.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  $('#clock-date').textContent = `${date.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })} · UTC ${date.toISOString().slice(11, 16)}`;
   $('#time-mode').textContent = clock.live ? t('time.live') : `${t('time.sim')} ×${num(clock.speed)}`;
 }
 requestAnimationFrame(loop);

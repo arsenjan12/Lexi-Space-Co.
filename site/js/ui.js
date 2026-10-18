@@ -459,7 +459,7 @@ export function renderModules(root, active = 'module1') {
   if (active === 'astro') {
     const fs = db.formulas().filter(f => !f.module_id);
     root.innerHTML = `<p class="lead">${t('mod.astroLead')}</p><div class="mgrid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${fs.map(f =>
-      `<button type="button" class="mcard" data-open="formula:${f.id}"><b>${esc(f.title)}</b><div class="eq" style="margin:.6rem 0 0">${tex(f.latex)}</div><p>${esc(f.explanation)}</p><span class="tag">${f.origin === 'gosha' ? 'server.py' : 'LEXI Space'}</span></button>`).join('')}</div>`;
+      `<button type="button" class="mcard" data-open="formula:${f.id}"><b>${esc(f.title)}</b><div class="eq" style="margin:.6rem 0 0">${tex(f.latex)}</div><p>${esc(f.explanation)}</p></button>`).join('')}</div>`;
     return;
   }
 

@@ -106,17 +106,30 @@ async function loadModelInfo() {
 
 async function loadModel(onProgress) {
   if (!modelInfo?.url) { modelState = 'missing'; return; }
+  if (modelState === 'loading' || modelState === 'ready') return;   // повторное нажатие — ничего не делаем
   modelState = 'loading';
   const { Wllama } = await import('../vendor/wllama/index.js');
-  wllama = new Wllama({
+  const paths = {
     'single-thread/wllama.wasm': new URL('../vendor/wllama/single-thread/wllama.wasm', import.meta.url).href,
     'multi-thread/wllama.wasm': new URL('../vendor/wllama/multi-thread/wllama.wasm', import.meta.url).href,
-  }, { parallelDownloads: 3 });
+  };
   const url = new URL(modelInfo.url, location.href).href;
-  await wllama.loadModelFromUrl(url, {
-    n_ctx: 2048,
-    progressCallback: ({ loaded, total }) => onProgress?.(total ? loaded / total : 0),
-  });
+  const load = useCache => {
+    wllama = new Wllama(paths, { parallelDownloads: 3 });
+    return wllama.loadModelFromUrl(url, {
+      n_ctx: 2048,
+      useCache,
+      progressCallback: ({ loaded, total }) => onProgress?.(total ? loaded / total : 0),
+    });
+  };
+  try {
+    await load(true);       // модель кэшируется в браузере, второй раз грузится мгновенно
+  } catch (e) {
+    // Кэш браузера (OPFS) занят — например, сайт открыт во второй вкладке. Грузим без кэша.
+    if (!/AccessHandle|Access Handle|NoModificationAllowed/i.test(e.message)) { modelState = 'off'; throw e; }
+    await wllama.exit().catch(() => {});
+    await load(false);
+  }
   modelState = 'ready';
 }
 
@@ -171,7 +184,8 @@ export function initLexiAI({ findObject, liveSummary, openRef }) {
     if (!modelInfo?.url) { modelBox.innerHTML = esc(t('ai.noModel')); return; }
     modelBox.innerHTML = `${esc(t('ai.loadTitle'))} ${modelInfo.sizeMB ? esc(t('ai.size', { s: modelInfo.sizeMB >= 1000 ? (modelInfo.sizeMB / 1024).toFixed(1) + ' ГБ'.replace('ГБ', lang === 'ru' ? 'ГБ' : 'GB') : modelInfo.sizeMB + (lang === 'ru' ? ' МБ' : ' MB') })) : ''}
       <p style="margin:.6rem 0 0"><button type="button" class="btn-line sm" id="ai-load">${t('ai.load')}</button></p>`;
-    $('#ai-load').onclick = async () => {
+    $('#ai-load').onclick = async e => {
+      e.currentTarget.disabled = true;
       try {
         await loadModel(p => renderModelBox(p));
       } catch (e) {
