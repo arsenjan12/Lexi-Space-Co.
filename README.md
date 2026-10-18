@@ -163,3 +163,5 @@ ai\.venv\Scripts\python ai/export_gguf.py         # GGUF Q5_K_M → site/models 
 ## Источники данных и лицензии
 
 CelesTrak (орбиты), NASA NeoWs (астероиды), NOAA SWPC (Kp), каталог звёзд HYG v4.1 (CC BY-SA 4.0), d3-celestial (BSD-3): русские имена звёзд, созвездия, каталог Мессье. Библиотеки: three.js, satellite.js, astronomy-engine, sql.js, KaTeX, noble-post-quantum, wllama — MIT. Qwen2.5 — Apache 2.0. Шрифты Cormorant, Manrope, JetBrains Mono — OFL.
+
+## With respect from Ars and Gosha.
