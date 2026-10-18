@@ -5,7 +5,7 @@ import { Vector3 } from 'three';
 import { CONFIG } from './config.js';
 import { t, lang, applyLang, onLang, num, locale } from './i18n.js';
 import * as db from './db.js';
-import { clock, observer, locate, onPosition, bodyNow, fixedNow, raText, decText, azText } from './astro.js';
+import { clock, observer, locate, setPlace, onPosition, bodyNow, fixedNow, raText, decText, azText } from './astro.js';
 import { loadGroup, satNow } from './sats.js';
 import { createScene } from './scene.js';
 import * as ui from './ui.js';
@@ -27,10 +27,32 @@ function portalHref() {
   u.searchParams.set('lang', lang);
   return u.href;
 }
+// Уход на портал с анимацией прыжка (средняя кнопка и Ctrl+клик — как обычно, в новой вкладке)
+function leaveToPortal(e) {
+  const a = e.currentTarget;
+  if (!a.href || a.href.endsWith('#') || e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+  e.preventDefault();
+  ui.closePanel();
+  $('#warp-txt').textContent = t('warp.portal');
+  document.body.classList.add('leaving');
+  $('#warp').classList.add('on');
+  scene.warpOut();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => { location.href = a.href; }, reduce ? 200 : 1400);
+}
+// Вернулись кнопкой «назад» — страница могла восстановиться из кэша вместе с анимацией
+addEventListener('pageshow', e => {
+  if (!e.persisted) return;
+  $('#warp').classList.remove('on');
+  document.body.classList.remove('leaving');
+  scene.warpReset();
+});
+
 function updatePortalLinks() {
   const href = portalHref();
   $$('[data-portal]').forEach(a => {
     if (href) a.href = href; else if (a.classList.contains('back')) a.hidden = true; else a.removeAttribute('href');
+    if (!a.dataset.warp) { a.dataset.warp = '1'; a.addEventListener('click', leaveToPortal); }
   });
 }
 
@@ -54,6 +76,7 @@ window.lexi = { scene, db };          // для отладки из консол
 let searchIndex = [];
 let selectedRef = null;
 let neos = null;
+const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е');
 
 // Группы спутников
 const groups = db.satGroups();
@@ -114,23 +137,74 @@ setInterval(ui.panelTick, 1000);
 //  Точка наблюдения
 // =====================================================================
 function renderWhere() {
-  const place = observer.fromDevice ? t('where.you') : CONFIG.defaultPlace[lang];
+  const place = observer.fromDevice ? t('where.you') : observer.place || CONFIG.defaultPlace[lang];
   $('#where').innerHTML = `${place}<br>${observer.lat.toFixed(3)}°, ${observer.lon.toFixed(3)}°${observer.accuracy ? ` · ±${num(observer.accuracy, 0)} ${t('unit.m')}` : ''}`;
 }
 renderWhere();
+
+// Города для ручного выбора точки, если геолокация недоступна
+const CITIES = [
+  ['Москва', 'Moscow', 55.7558, 37.6173], ['Санкт-Петербург', 'Saint Petersburg', 59.9343, 30.3351], ['Минск', 'Minsk', 53.9006, 27.559],
+  ['Казань', 'Kazan', 55.7887, 49.1221], ['Екатеринбург', 'Yekaterinburg', 56.8389, 60.6057], ['Новосибирск', 'Novosibirsk', 55.0084, 82.9357],
+  ['Алматы', 'Almaty', 43.2389, 76.8897], ['Ташкент', 'Tashkent', 41.2995, 69.2401], ['Тбилиси', 'Tbilisi', 41.7151, 44.8271],
+  ['Берлин', 'Berlin', 52.52, 13.405], ['Лондон', 'London', 51.5074, -0.1278], ['Нью-Йорк', 'New York', 40.7128, -74.006],
+];
+
+function placeChosen() {
+  renderWhere();
+  runGnssCheck();
+  ui.closePanel();
+  ui.toast(t('toast.locate'));
+}
+
+// Панель выбора точки: почему не вышло, как включить геолокацию, города и координаты вручную
+function showPlacePicker(code) {
+  const reason = code === 1 ? t('geo.denied') : code === 3 ? t('geo.timeout') : t('geo.unavailable');
+  ui.openPanel(`
+    <p class="p-kind">${t('geo.kind')}</p>
+    <h2 class="p-title" id="panel-title">${t('geo.title')}</h2>
+    ${code ? `<p class="p-text">${reason}</p>` : ''}
+    ${code === 1 ? `<p class="p-note">${t('geo.howto')}</p>` : ''}
+    <p><button type="button" class="btn-line sm" data-geo-retry>${t('geo.retry')}</button></p>
+    <h3 class="p-h">${t('geo.cities')}</h3>
+    <div class="city-list">${CITIES.map((c, i) => `<button type="button" class="chip" data-city="${i}">${lang === 'ru' ? c[0] : c[1]}</button>`).join('')}</div>
+    <h3 class="p-h">${t('geo.manual')}</h3>
+    <form class="calc" id="geo-form">
+      <label>${t('f.lat')}<span class="sym">°</span><input type="number" name="lat" step="any" min="-90" max="90" value="${observer.lat.toFixed(4)}" inputmode="decimal"></label>
+      <label>${t('f.lon')}<span class="sym">°</span><input type="number" name="lon" step="any" min="-180" max="180" value="${observer.lon.toFixed(4)}" inputmode="decimal"></label>
+      <p style="margin:.8rem 0 0"><button type="submit" class="btn-gold sm">${t('geo.apply')}</button></p>
+    </form>`, { modal: true });
+  const body = $('#panel-body');
+  body.querySelectorAll('[data-city]').forEach(b => b.addEventListener('click', () => {
+    const c = CITIES[+b.dataset.city];
+    setPlace(c[2], c[3], lang === 'ru' ? c[0] : c[1]);
+    placeChosen();
+  }));
+  $('#geo-form', body).addEventListener('submit', e => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget), lat = +f.get('lat'), lon = +f.get('lon');
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180 || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    setPlace(lat, lon, `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`);
+    placeChosen();
+  });
+  $('[data-geo-retry]', body).addEventListener('click', () => { ui.closePanel(); requestLocation(); });
+}
+
 let locating = false;
 async function requestLocation() {
   if (locating) return;
   locating = true;
+  $('#locate').textContent = t('geo.locating');
   try {
     await locate();
     renderWhere();
     ui.toast(t('toast.locate'));
     runGnssCheck();
-  } catch {
-    ui.toast(t('where.denied'));
+  } catch (e) {
     sec.geoDenied();
+    showPlacePicker(e?.code || 2);
   }
+  $('#locate').textContent = t('hud.locate');
   locating = false;
 }
 $('#locate').addEventListener('click', requestLocation);
@@ -365,7 +439,6 @@ async function showNeoList() {
 // =====================================================================
 //  Поиск
 // =====================================================================
-const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е');
 function rebuildSearch() {
   const idx = [];
   const push = (label, tag, ref, rank, extra = []) => {
@@ -442,6 +515,13 @@ const ai = initLexiAI({ findObject, liveSummary, openRef });
 // =====================================================================
 //  Мобильная шапка, язык, старт
 // =====================================================================
+// Поиск на телефоне — по иконке, раскрывается поверх шапки
+$('#search-btn').addEventListener('click', () => {
+  $('.top').classList.add('searching');
+  $('#search').focus();
+});
+$('#search').addEventListener('blur', () => setTimeout(() => $('.top').classList.remove('searching'), 200));
+
 $('#hud-toggle').addEventListener('click', () => {
   const open = !$('#hud').classList.contains('open');
   $('#hud').classList.toggle('open', open);

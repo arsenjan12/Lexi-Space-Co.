@@ -34,6 +34,7 @@ export const observer = {
   lat: 55.7558, lon: 37.6173, h: 0.15,   // градусы, км
   fromDevice: false,
   accuracy: null,
+  place: null,      // название выбранного вручную места
   get astro() { return new A.Observer(this.lat, this.lon, this.h * 1000); },
   // для satellite.js — радианы и километры
   get gd() { return { latitude: this.lat * Math.PI / 180, longitude: this.lon * Math.PI / 180, height: this.h }; },
@@ -42,20 +43,49 @@ export const observer = {
 const geoListeners = [];
 export const onPosition = fn => geoListeners.push(fn);
 
+let watchId = null;
+function applyPosition(p) {
+  observer.lat = p.coords.latitude;
+  observer.lon = p.coords.longitude;
+  observer.h = (p.coords.altitude || 150) / 1000;
+  observer.accuracy = p.coords.accuracy;
+  observer.fromDevice = true;
+  observer.place = null;
+  geoListeners.forEach(fn => fn(p));
+}
+
+// Сначала быстрый запрос без высокой точности: на компьютере без GPS высокоточный
+// часто не успевает и выглядит как отказ. Потом — слежение за перемещением.
+// Ошибка приходит с кодом: 1 — доступ запрещён, 2 — система не знает место, 3 — истекло время.
 export function locate() {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error('geolocation'));
-    navigator.geolocation.watchPosition(p => {
-      observer.lat = p.coords.latitude;
-      observer.lon = p.coords.longitude;
-      observer.h = (p.coords.altitude || 150) / 1000;
-      observer.accuracy = p.coords.accuracy;
-      observer.fromDevice = true;
-      geoListeners.forEach(fn => fn(p));
+    if (!navigator.geolocation) return reject(Object.assign(new Error('no geolocation'), { code: 2 }));
+    navigator.geolocation.getCurrentPosition(p => {
+      applyPosition(p);
+      if (watchId == null) {
+        watchId = navigator.geolocation.watchPosition(applyPosition, () => {}, { enableHighAccuracy: true, maximumAge: 5000 });
+      }
       resolve(p);
-    }, reject, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+    }, reject, { enableHighAccuracy: false, maximumAge: 600000, timeout: 15000 });
   });
 }
+
+// Точка, выбранная вручную (город или координаты), — запоминаем в браузере
+export function setPlace(lat, lon, name = null) {
+  observer.lat = lat;
+  observer.lon = lon;
+  observer.h = 0.15;
+  observer.accuracy = null;
+  observer.fromDevice = false;
+  observer.place = name;
+  try { localStorage.setItem('lexi-place', JSON.stringify({ lat, lon, name })); } catch { /* приватный режим */ }
+  geoListeners.forEach(fn => fn(null));
+}
+
+try {
+  const saved = JSON.parse(localStorage.getItem('lexi-place'));
+  if (saved && Number.isFinite(saved.lat) && Number.isFinite(saved.lon)) Object.assign(observer, { lat: saved.lat, lon: saved.lon, place: saved.name });
+} catch { /* нет сохранённой точки */ }
 
 // ---------------------------------------------------------------------
 //  Солнечная система

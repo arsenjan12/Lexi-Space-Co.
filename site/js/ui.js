@@ -105,7 +105,7 @@ export function formulaBlock(id, values = {}, { title = true } = {}) {
 }
 
 function wireCalcs(root) {
-  root.querySelectorAll('form.calc').forEach(form => {
+  root.querySelectorAll('form.calc[data-calc]').forEach(form => {
     const run = () => {
       const params = Object.fromEntries([...form.querySelectorAll('input')].map(i => [i.name, parseFloat(i.value)]));
       const r = runFormula(form.dataset.calc, params);

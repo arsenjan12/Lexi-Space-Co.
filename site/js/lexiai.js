@@ -104,34 +104,79 @@ async function loadModelInfo() {
   return modelInfo;
 }
 
+// Куски модели качаем сами и складываем в Cache Storage браузера.
+// Встроенный загрузчик wllama пишет файлы в OPFS и на больших кусках срывался
+// («Model file not found», «Access Handle»), поэтому wllama получает уже готовые данные.
+const MODEL_CACHE = 'lexiai-model';
+
+function modelParts() {
+  // Имена и размеры кусков — из ai-model.json; если списка нет, только первый файл
+  const base = new URL(modelInfo.url, location.href);
+  const files = modelInfo.release?.files || [{ name: base.pathname.split('/').pop(), size: 0 }];
+  return files.map(f => ({ url: new URL(f.name, base).href, size: f.size }));
+}
+
+// Счётчик байтов для прогресса, не держит данные в памяти
+const counter = onBytes => new TransformStream({ transform(chunk, ctl) { onBytes(chunk.byteLength); ctl.enqueue(chunk); } });
+
+async function fetchPart(part, cache, onBytes) {
+  const name = part.url.split('/').pop();
+  const hit = cache && await cache.match(part.url);
+  if (hit) {
+    const blob = await hit.blob();
+    if (!part.size || blob.size === part.size) { onBytes(blob.size); return blob; }
+    await cache.delete(part.url);
+  }
+  const res = await fetch(part.url);
+  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
+  if (cache) {
+    // Поток сразу на диск (Cache Storage), а wllama получает Blob, который лежит на диске, а не в памяти
+    await cache.put(part.url, new Response(res.body.pipeThrough(counter(onBytes))));
+    const blob = await (await cache.match(part.url)).blob();
+    if (part.size && blob.size !== part.size) { await cache.delete(part.url); throw new Error(`${name}: файл скачался не полностью`); }
+    return blob;
+  }
+  // Без Cache Storage (например, приватный режим) — в память
+  const blob = await new Response(res.body.pipeThrough(counter(onBytes))).blob();
+  if (part.size && blob.size !== part.size) throw new Error(`${name}: файл скачался не полностью`);
+  return blob;
+}
+
 async function loadModel(onProgress) {
   if (!modelInfo?.url) { modelState = 'missing'; return; }
   if (modelState === 'loading' || modelState === 'ready') return;   // повторное нажатие — ничего не делаем
   modelState = 'loading';
-  const { Wllama } = await import('../vendor/wllama/index.js');
-  const paths = {
-    'single-thread/wllama.wasm': new URL('../vendor/wllama/single-thread/wllama.wasm', import.meta.url).href,
-    'multi-thread/wllama.wasm': new URL('../vendor/wllama/multi-thread/wllama.wasm', import.meta.url).href,
-  };
-  const url = new URL(modelInfo.url, location.href).href;
-  const load = useCache => {
-    wllama = new Wllama(paths, { parallelDownloads: 3 });
-    return wllama.loadModelFromUrl(url, {
-      n_ctx: 2048,
-      useCache,
-      progressCallback: ({ loaded, total }) => onProgress?.(total ? loaded / total : 0),
-    });
-  };
   try {
-    await load(true);       // модель кэшируется в браузере, второй раз грузится мгновенно
+    const parts = modelParts();
+    const total = parts.reduce((a, p) => a + p.size, 0) || 1;
+    let loaded = 0;
+    const tick = n => { loaded += n; onProgress?.(Math.min(loaded / total, 1)); };
+    const cache = await caches.open(MODEL_CACHE + ':' + (modelInfo.release?.tag || modelInfo.trained)).catch(() => null);
+    // Старые версии модели из кэша убираем, чтобы не занимали место
+    caches.keys().then(keys => keys.filter(k => k.startsWith(MODEL_CACHE) && k !== MODEL_CACHE + ':' + (modelInfo.release?.tag || modelInfo.trained)).forEach(k => caches.delete(k))).catch(() => {});
+
+    // По три куска параллельно, порядок сохраняем — llama.cpp ждёт их по номерам
+    const blobs = new Array(parts.length);
+    let next = 0;
+    const worker = async () => { while (next < parts.length) { const i = next++; blobs[i] = await fetchPart(parts[i], cache, tick); } };
+    await Promise.all([worker(), worker(), worker()]);
+
+    const { Wllama } = await import('../vendor/wllama/index.js');
+    wllama = new Wllama({
+      'single-thread/wllama.wasm': new URL('../vendor/wllama/single-thread/wllama.wasm', import.meta.url).href,
+      'multi-thread/wllama.wasm': new URL('../vendor/wllama/multi-thread/wllama.wasm', import.meta.url).href,
+    });
+    // n_batch 512: рабочий буфер ≈ 80 МБ вместо 320 — иначе вкладке может не хватить памяти
+    await wllama.loadModel(blobs, { n_ctx: 2048, n_batch: 512 });
+    modelState = 'ready';
   } catch (e) {
-    // Кэш браузера (OPFS) занят — например, сайт открыт во второй вкладке. Грузим без кэша.
-    if (!/AccessHandle|Access Handle|NoModificationAllowed/i.test(e.message)) { modelState = 'off'; throw e; }
-    await wllama.exit().catch(() => {});
-    await load(false);
+    modelState = 'off';
+    throw e;
   }
-  modelState = 'ready';
 }
+
+// Хватит ли устройству памяти: модели нужно ≈ 2 ГБ оперативной памяти
+export const lowMemory = () => (navigator.deviceMemory && navigator.deviceMemory < 4);
 
 async function generate(messages, onText, signal) {
   return wllama.createChatCompletion(messages, {
@@ -183,6 +228,7 @@ export function initLexiAI({ findObject, liveSummary, openRef }) {
     if (modelState === 'failed') return;
     if (!modelInfo?.url) { modelBox.innerHTML = esc(t('ai.noModel')); return; }
     modelBox.innerHTML = `${esc(t('ai.loadTitle'))} ${modelInfo.sizeMB ? esc(t('ai.size', { s: modelInfo.sizeMB >= 1000 ? (modelInfo.sizeMB / 1024).toFixed(1) + ' ГБ'.replace('ГБ', lang === 'ru' ? 'ГБ' : 'GB') : modelInfo.sizeMB + (lang === 'ru' ? ' МБ' : ' MB') })) : ''}
+      ${lowMemory() ? `<span class="lowmem">${esc(t('ai.lowmem'))}</span>` : ''}
       <p style="margin:.6rem 0 0"><button type="button" class="btn-line sm" id="ai-load">${t('ai.load')}</button></p>`;
     $('#ai-load').onclick = async e => {
       e.currentTarget.disabled = true;

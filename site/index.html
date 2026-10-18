@@ -44,6 +44,7 @@
     <button type="button" data-view="modules" aria-pressed="false" data-i18n="nav.modules">Модули</button>
   </nav>
   <div class="top-r">
+    <button type="button" class="search-btn" id="search-btn" data-i18n-aria="search.open" aria-label="Поиск"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg></button>
     <label class="search">
       <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
       <input id="search" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="search.ph" placeholder="Сириус, МКС, M31, Марс…">
@@ -138,6 +139,7 @@
   </form>
 </section>
 
+<div id="warp" aria-hidden="true"><p id="warp-txt"></p></div>
 <div id="toast" role="status" aria-live="polite"><span id="toast-txt"></span></div>
 
 <!-- иконки -->

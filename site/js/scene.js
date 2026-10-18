@@ -276,7 +276,7 @@ export function createScene(canvas, data) {
       controls.enableZoom = true; controls.enablePan = false; controls.rotateSpeed = 0.6;
       controls.minDistance = v === 'orbit' ? 1.15 : 3;
       controls.maxDistance = v === 'orbit' ? 140 : 160;
-      camera.fov = 45;
+      camera.fov = freeFov();
       camera.position.copy(saved?.pos ?? (v === 'orbit' ? new THREE.Vector3(2.2, 1.6, 3.6) : new THREE.Vector3(0, 38, 62)));
       controls.target.copy(saved?.target ?? new THREE.Vector3(0, 0, 0));
     }
@@ -539,21 +539,41 @@ export function createScene(canvas, data) {
   // =================================================================
   //  Цикл отрисовки
   // =================================================================
+  // На вертикальном экране телефона раскрываем поле зрения, чтобы Земля и орбиты помещались по ширине
+  function freeFov() {
+    const aspect = (canvas.clientWidth || 1) / (canvas.clientHeight || 1);
+    return aspect < 1 ? Math.min(72, 45 / Math.pow(aspect, 0.55)) : 45;
+  }
+
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (canvas.width !== Math.floor(w * renderer.getPixelRatio()) || canvas.height !== Math.floor(h * renderer.getPixelRatio())) {
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
+      if (view !== 'sky' && !warpTarget) camera.fov = freeFov();
       camera.updateProjectionMatrix();
     }
   }
 
   let labelsFn = () => [];
   let paused = false;
+  // Прыжок при уходе на портал: поле зрения раскрывается, камера улетает вперёд
+  let warp = 0, warpTarget = 0, warpFov = 45, warpLast = 0;
+  function applyWarp() {
+    const now = performance.now(), dt = Math.min(0.05, (now - (warpLast || now)) / 1000);
+    warpLast = now;
+    if (!warpTarget && warp < 0.001) return;
+    warp += (warpTarget - warp) * (1 - Math.exp(-dt * 2.4));
+    camera.fov = warpFov + warp * 55;
+    camera.updateProjectionMatrix();
+    if (view !== 'sky') camera.position.addScaledVector(camera.getWorldDirection(tmp), warp * dt * 6);
+  }
+
   function frame(date, speed) {
     resize();
     if (paused) return;
     update(date, speed);
+    applyWarp();
     sun3d.userData.surface.material.uniforms.uTime.value = performance.now() / 1000;
     renderer.render(scene, camera);
     drawLabels(labelsFn(view));
@@ -575,6 +595,8 @@ export function createScene(canvas, data) {
       if (name === 'orbits') Object.values(planets).forEach(p => { p.orbit.visible = on; });
     },
     pause(v) { paused = v; },
+    warpOut() { warpFov = camera.fov; warpTarget = 1; flyTo = null; controls.enabled = false; },
+    warpReset() { warpTarget = 0; warp = 0; camera.fov = warpFov; camera.updateProjectionMatrix(); controls.enabled = true; },
     camera, canvas, renderer, three: scene,
   };
 }
