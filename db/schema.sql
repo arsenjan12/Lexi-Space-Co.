@@ -86,8 +86,7 @@ CREATE TABLE formulas (
   module_id  TEXT REFERENCES modules(id),   -- NULL — общая астрономия (формулы Гоши)
   latex      TEXT NOT NULL,
   calc       TEXT,
-  result_unit TEXT,
-  origin     TEXT NOT NULL DEFAULT 'portal'  -- portal | gosha | space
+  result_unit TEXT
 );
 CREATE TABLE formula_texts (
   formula_id   TEXT NOT NULL REFERENCES formulas(id),

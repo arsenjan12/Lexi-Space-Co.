@@ -1,7 +1,7 @@
 // Настройки, которые может понадобиться поменять руками.
 export const CONFIG = {
-  // Адрес портала LEXI — сюда ведёт «← LEXI». Если пусто, ссылка ведёт туда, откуда пришёл человек.
-  portalUrl: '',
+  // Адрес портала LEXI — сюда ведёт кнопка «← LEXI» в шапке.
+  portalUrl: 'https://lexi-ecosystem.netlify.app/',
 
   // Группы спутников, которые грузятся сразу (остальные — по нажатию на слой)
   preload: ['stations', 'gps-ops', 'glo-ops', 'galileo', 'weather', 'science'],
