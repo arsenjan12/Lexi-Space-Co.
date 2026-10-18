@@ -49,7 +49,16 @@ createServer(async (req, res) => {
     if (!path.startsWith(ROOT)) { res.writeHead(403).end(); return; }
     if ((await stat(path).catch(() => null))?.isDirectory()) path = join(path, 'index.html');
     const data = await readFile(path);
-    res.writeHead(200, { 'Content-Type': TYPES[extname(path)] || 'application/octet-stream', 'Cache-Control': 'no-cache', ...SECURITY });
+    const type = TYPES[extname(path)] || 'application/octet-stream';
+    // Запросы по частям (Range), как у Netlify: на них держится докачка модели
+    const range = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || '');
+    if (range) {
+      const from = +range[1], to = Math.min(range[2] ? +range[2] : data.length - 1, data.length - 1);
+      res.writeHead(206, { 'Content-Type': type, 'Content-Range': `bytes ${from}-${to}/${data.length}`, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ...SECURITY });
+      res.end(data.subarray(from, to + 1));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ...SECURITY });
     res.end(data);
   } catch (e) {
     res.writeHead(e.code === 'ENOENT' ? 404 : 500, { 'Content-Type': 'text/plain; charset=utf-8' });
