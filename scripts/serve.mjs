@@ -33,7 +33,7 @@ const SECURITY = {
   'Cross-Origin-Embedder-Policy': 'credentialless',
   'X-Content-Type-Options': 'nosniff',
 };
-const FUNCTIONS = { '/api/tle': 'tle.mjs', '/api/neo': 'neo.mjs', '/api/kp': 'kp.mjs' };
+const FUNCTIONS = { '/api/tle': 'tle.mjs', '/api/gp': 'gp.mjs', '/api/neo': 'neo.mjs', '/api/kp': 'kp.mjs' };
 
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);

@@ -355,10 +355,45 @@ export function makeAsteroid(seed = 1) {
 
 // ---------------------------------------------------------------------
 //  Мини-просмотр в карточке объекта
+//
+//  Один WebGL-контекст на все карточки: холст переносится из карточки в карточку.
+//  Новый контекст на каждую карточку (и принудительный сброс старого) Chrome
+//  может счесть «поломкой видеокарты» и заблокировать 3D для всего сайта.
 // ---------------------------------------------------------------------
+let shared = null;          // { canvas, renderer } или false, если WebGL недоступен
+
+function sharedRenderer() {
+  if (shared !== null) return shared;
+  try {
+    const canvas = document.createElement('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    shared = { canvas, renderer };
+  } catch {
+    shared = false;
+  }
+  return shared;
+}
+
+// Освободить всё, что модель заняла на видеокарте
+function disposeObject(root) {
+  root.traverse(o => {
+    o.geometry?.dispose();
+    for (const m of [].concat(o.material || [])) {
+      for (const u of Object.values(m.uniforms || {})) if (u.value?.isTexture) u.value.dispose();
+      for (const k of ['map', 'alphaMap']) m[k]?.dispose?.();
+      m.dispose?.();
+    }
+  });
+}
+
 export function createPreview(canvas, spec) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const gl = sharedRenderer();
+  if (!gl) { canvas.parentElement?.classList.add('no3d'); return () => {}; }
+  canvas.replaceWith(gl.canvas);
+  canvas = gl.canvas;
+  const renderer = gl.renderer;
+
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, .01, 100);
   camera.position.set(0, .6, 4.2); camera.lookAt(0, 0, 0);
@@ -397,5 +432,5 @@ export function createPreview(canvas, spec) {
     raf = requestAnimationFrame(loop);
   };
   loop();
-  return () => { alive = false; cancelAnimationFrame(raf); renderer.dispose(); renderer.forceContextLoss(); };
+  return () => { alive = false; cancelAnimationFrame(raf); disposeObject(scene); renderer.renderLists.dispose(); };
 }

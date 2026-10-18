@@ -59,8 +59,12 @@ const starColor = (ci, out) => out.copy(blackbody(bvToTemp(ci ?? 0.6))).lerp(new
 const DSO_COLOR = { galaxy: '#ecd391', nebula: '#ff9ab8', cluster: '#bcd2ff', other: '#f3f0e8' };
 const dsoFamily = kind => kind.startsWith('galaxy') ? 'galaxy' : ['nebula', 'planetary', 'snr'].includes(kind) ? 'nebula' : ['globular', 'open'].includes(kind) ? 'cluster' : 'other';
 
-export function createScene(canvas, data) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+export function createScene(canvas, data, { onLost = () => {}, onRestored = () => {} } = {}) {
+  // Видеокарту выбирает браузер: принудительная дискретная на ноутбуках чаще «падает»
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // Видеокарта сбросила контекст (драйвер, нехватка памяти) — three.js восстановит его сам, мы только сообщаем
+  canvas.addEventListener('webglcontextlost', () => onLost());
+  canvas.addEventListener('webglcontextrestored', () => onRestored());
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setClearColor(0x05060a, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -598,5 +602,22 @@ export function createScene(canvas, data) {
     warpOut() { warpFov = camera.fov; warpTarget = 1; flyTo = null; controls.enabled = false; },
     warpReset() { warpTarget = 0; warp = 0; camera.fov = warpFov; camera.updateProjectionMatrix(); controls.enabled = true; },
     camera, canvas, renderer, three: scene,
+  };
+}
+
+// Сцена-заглушка, когда WebGL недоступен: сайт работает дальше без 3D
+export function createStubScene() {
+  let view = 'orbit';
+  const satLayers = new Map();
+  return {
+    frame() {}, focus() {}, select() {}, setLabels() {}, toggleLabels() {}, setSkyLayer() {}, pause() {}, warpOut() {}, warpReset() {},
+    setView(v) { view = v; },
+    pickAt: () => null,
+    worldPosOf: () => null,
+    setSatellites(group, sats, color) { satLayers.set(group, { sats, color, points: { visible: true } }); },
+    setSatLayerVisible(group, on) { const l = satLayers.get(group); if (l) l.points.visible = on; },
+    get view() { return view; },
+    get satLayers() { return satLayers; },
+    stub: true,
   };
 }
