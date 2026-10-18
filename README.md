@@ -140,7 +140,7 @@ ai\.venv\Scripts\python ai/export_gguf.py         # GGUF Q5_K_M → site/models 
 
 ### Где лежит модель
 
-Файлы модели (13 кусков по 95 МБ) опубликованы в [GitHub Releases](https://github.com/f4ckpy/Lexi-Space-Co./releases) этого репозитория, в самом git их нет. Браузер не может скачивать их с GitHub напрямую (GitHub не отдаёт заголовок CORS), поэтому Netlify при сборке забирает их из релиза командой `node scripts/fetch-model.mjs` и раздаёт вместе с сайтом. Список файлов и тег релиза — в `site/data/ai-model.json`.
+Файлы модели (13 кусков по 95 МБ) опубликованы в [GitHub Releases](https://github.com/arsenjan12/Lexi-Space-Co./releases) этого репозитория, в самом git их нет. Браузер не может скачивать их с GitHub напрямую (GitHub не отдаёт заголовок CORS), поэтому Netlify при сборке забирает их из релиза командой `node scripts/fetch-model.mjs` и раздаёт вместе с сайтом. Список файлов и тег релиза — в `site/data/ai-model.json`.
 
 Новая версия модели: `ai/export_gguf.py` → новый релиз с файлами из `site/models` → обновить поле `release` в `site/data/ai-model.json`.
 
