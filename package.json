@@ -1,0 +1,41 @@
+{
+  "name": "lexi-space",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LEXI Space — ситуационный центр: звёзды, планеты, галактики и спутники в реальном времени",
+  "type": "module",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "catalogs": "node scripts/fetch-catalogs.mjs",
+    "import": "node scripts/import-data.mjs",
+    "db": "node db/build-db.mjs",
+    "keys": "node scripts/make-keys.mjs",
+    "dev": "netlify dev",
+    "serve": "node scripts/serve.mjs",
+    "assets": "node scripts/extract-portal-assets.mjs",
+    "formulas-doc": "node scripts/export-formulas-docx.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/word-finalize.ps1 -Path \"%CD%\\docs\\LEXI_формулы_и_алгоритмы.docx\"",
+    "fetch-model": "node scripts/fetch-model.mjs"
+  },
+  "dependencies": {
+    "@noble/post-quantum": "0.2.1"
+  },
+  "devDependencies": {
+    "@noble/curves": "^1.7.0",
+    "@noble/hashes": "^1.6.0",
+    "@wllama/wllama": "2.3.1",
+    "@xmldom/xmldom": "^0.8.10",
+    "astronomy-engine": "2.1.19",
+    "docx": "^9.5.0",
+    "esbuild": "^0.24.0",
+    "katex": "0.16.11",
+    "satellite.js": "5.0.0",
+    "sql.js": "1.11.0",
+    "three": "0.169.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/f4ckpy/Lexi-Space-Co.git"
+  },
+  "homepage": "https://lexi-space.netlify.app"
+}

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEXI Space — ситуационный центр</title>
+<meta name="description" content="LEXI Space: звёзды, планеты, галактики и спутники в реальном времени, формулы и алгоритмы защиты космической инфраструктуры, ассистент LexiAI.">
+<meta name="theme-color" content="#05060a">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='54 8 53 50'%3E%3Cg fill='%23C49D47'%3E%3Cpath d='m55.5 49 28.2-25.1c2.3-1.9 7.8-5.6 11.1-7.5-3.4 3.9-29.6 29.4-29.6 29.4l-9.7 3.2z'/%3E%3Cpath d='m57.1 56 26.5-25.1 22.1-21.6c-1.3 2.5-3.7 6.7-6.2 9.3l-31 32.5-11.4 4.9z'/%3E%3Cpath d='m66.4 56 12.3-12.2 22.1-23.4c-1.7 3.6-5.6 9.5-7.5 11.8-4.6 5.6-18.2 20-18.2 20l-8.8 3.8h0.1z'/%3E%3Cpath d='m62.9 40.5c-0.7-1.6-1.1-4.3-1-6.8 0.5-9.8 9.7-19.6 22.7-18.3-11.1-1.4-19.8 9.6-18.7 18.8 0.1 2.1 8-4.6 10.5-6.3-2.5 2.7-13 12-13.5 12.6z'/%3E%3Cpath d='m77.6 52.7c10.2 0.9 19.6-8.8 17.9-20.9l2.6-3.9c3.2 8.3-0.4 19.4-10.3 23.5-3.6 1.7-7.8 1.9-10.2 1.3z'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="vendor/katex.min.css">
+<link rel="stylesheet" href="css/space.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/" } }
+</script>
+</head>
+<body>
+
+<!-- фон как на портале -->
+<div class="css-stars" aria-hidden="true"></div>
+<canvas id="scene" aria-label="3D-сцена"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="frame" aria-hidden="true"></div>
+
+<!-- загрузка -->
+<div id="boot" aria-live="polite">
+  <svg class="boot-mark" viewBox="0 0 53 50" aria-hidden="true"><use href="#mark"/></svg>
+  <p class="boot-word">LEXI Space</p>
+  <p class="boot-step mono" id="boot-step">…</p>
+</div>
+
+<!-- шапка -->
+<header class="top">
+  <a class="brand" href="#" data-portal title="LEXI">
+    <svg viewBox="0 0 53 50" aria-hidden="true"><use href="#mark"/></svg>
+    <span class="serif">LEXI <em>Space</em></span>
+  </a>
+  <nav class="tabs" data-i18n-aria="nav.aria" aria-label="Разделы">
+    <button type="button" data-view="orbit" aria-pressed="true" data-i18n="nav.orbit">Орбита</button>
+    <button type="button" data-view="solar" aria-pressed="false" data-i18n="nav.solar">Солнечная система</button>
+    <button type="button" data-view="sky" aria-pressed="false" data-i18n="nav.sky">Небо</button>
+    <button type="button" data-view="modules" aria-pressed="false" data-i18n="nav.modules">Модули</button>
+  </nav>
+  <div class="top-r">
+    <label class="search">
+      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="search" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="search.ph" placeholder="Сириус, МКС, M31, Марс…">
+      <ul id="search-list" role="listbox" hidden></ul>
+    </label>
+    <div class="lang" role="group" data-i18n-aria="lang.label" aria-label="Язык">
+      <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <a class="back" href="#" data-portal data-i18n="nav.back">← LEXI</a>
+  </div>
+</header>
+
+<!-- левая колонка: время и состояние защиты -->
+<aside class="hud" id="hud">
+  <button type="button" class="hud-toggle" id="hud-toggle" aria-expanded="false" data-i18n-aria="hud.toggle" aria-label="Показать состояние">
+    <span class="dot"></span><span data-i18n="hud.short">Статус</span>
+  </button>
+  <div class="hud-body">
+    <p class="kicker"><span class="dot live"></span><span id="time-mode" data-i18n="time.live">Реальное время</span></p>
+    <p class="clock" id="clock">--:--:--</p>
+    <p class="clock-sub mono" id="clock-date">UTC</p>
+    <p class="where mono" id="where"></p>
+    <button type="button" class="btn-line sm" id="locate" data-i18n="hud.locate">Моё местоположение</button>
+
+    <h2 class="hud-h" data-i18n="sec.title">Состояние защиты</h2>
+    <ul class="ind" id="indicators"></ul>
+    <p class="hud-note" data-i18n="sec.note">Каждый показатель реально вычисляется в браузере. Нажмите, чтобы увидеть как.</p>
+  </div>
+</aside>
+
+<!-- нижняя панель: время и слои -->
+<div class="dock" id="dock">
+  <div class="timebar" role="group" data-i18n-aria="time.label" aria-label="Время">
+    <button type="button" data-speed="-600" title="−10 мин/с">«</button>
+    <button type="button" data-speed="0" class="now" data-i18n="time.now">Сейчас</button>
+    <button type="button" data-speed="60" title="1 мин/с">×60</button>
+    <button type="button" data-speed="600" title="10 мин/с">×600</button>
+    <button type="button" data-speed="86400" title="1 сут/с" data-i18n="time.day">×1д</button>
+  </div>
+  <div class="layers" id="layers"></div>
+</div>
+
+<!-- подсказка при наведении -->
+<div id="tip" role="tooltip" hidden></div>
+
+<!-- модули: отдельный «экран» поверх сцены -->
+<section id="modules" class="modules" hidden aria-labelledby="mod-h">
+  <div class="mod-wrap">
+    <p class="kicker" data-i18n="mod.kicker">Формулы, алгоритмы, связи</p>
+    <h1 id="mod-h" class="mod-title serif" data-i18n="mod.title">Как LEXI защищает космос</h1>
+    <p class="lead" data-i18n="mod.lead">Три модуля портала LEXI, разобранные по связям: какая угроза чем обнаруживается, чем закрывается и какой формулой считается. Любую формулу можно посчитать прямо здесь.</p>
+    <div class="mod-tabs" id="mod-tabs" role="tablist"></div>
+    <div id="mod-body"></div>
+    <p class="credits" data-i18n="credits">Данные: CelesTrak (орбиты), NASA NeoWs (астероиды), NOAA SWPC (индекс Kp), каталог звёзд HYG v4.1 (CC BY-SA 4.0), d3-celestial (BSD-3). Расчёты: astronomy-engine, satellite.js (SGP4), noble-post-quantum (ML-KEM, ML-DSA). LexiAI — Qwen2.5 (Apache 2.0), дообучена на базе LEXI.</p>
+  </div>
+</section>
+
+<!-- карточка объекта / формулы / показателя -->
+<div id="panel" aria-hidden="true">
+  <div class="scrim" data-close></div>
+  <aside class="sheet" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <button type="button" class="close" data-close data-i18n-aria="ui.close" aria-label="Закрыть">
+      <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+    </button>
+    <div id="panel-body"></div>
+  </aside>
+</div>
+
+<!-- LexiAI -->
+<button type="button" id="ai-open" class="ai-fab" aria-controls="ai" aria-expanded="false">
+  <svg class="ico" aria-hidden="true"><use href="#i-spark"/></svg><span>LexiAI</span>
+</button>
+<section id="ai" class="ai" hidden aria-labelledby="ai-h">
+  <header class="ai-head">
+    <div>
+      <h2 id="ai-h" class="serif">LexiAI</h2>
+      <p class="ai-mode mono" id="ai-mode"></p>
+    </div>
+    <button type="button" class="close" id="ai-close" data-i18n-aria="ui.close" aria-label="Закрыть">
+      <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+    </button>
+  </header>
+  <div class="ai-model" id="ai-model"></div>
+  <ol class="ai-log" id="ai-log" aria-live="polite"></ol>
+  <div class="ai-hints" id="ai-hints"></div>
+  <form class="ai-form" id="ai-form">
+    <textarea id="ai-input" rows="1" data-i18n-ph="ai.ph" placeholder="Спросите про угрозу, формулу или объект…"></textarea>
+    <button type="submit" class="btn-gold sm" data-i18n-aria="ai.send" aria-label="Отправить">
+      <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+    </button>
+  </form>
+</section>
+
+<div id="toast" role="status" aria-live="polite"><span id="toast-txt"></span></div>
+
+<!-- иконки -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="54 8 53 50"><g fill="#C49D47">
+    <path d="m55.5 49 28.2-25.1c2.3-1.9 7.8-5.6 11.1-7.5-3.4 3.9-29.6 29.4-29.6 29.4l-9.7 3.2z"/>
+    <path d="m57.1 56 26.5-25.1 22.1-21.6c-1.3 2.5-3.7 6.7-6.2 9.3l-31 32.5-11.4 4.9z"/>
+    <path d="m66.4 56 12.3-12.2 22.1-23.4c-1.7 3.6-5.6 9.5-7.5 11.8-4.6 5.6-18.2 20-18.2 20l-8.8 3.8h0.1z"/>
+    <path d="m62.9 40.5c-0.7-1.6-1.1-4.3-1-6.8 0.5-9.8 9.7-19.6 22.7-18.3-11.1-1.4-19.8 9.6-18.7 18.8 0.1 2.1 8-4.6 10.5-6.3-2.5 2.7-13 12-13.5 12.6z"/>
+    <path d="m67.5 28.8c1.6-7.9 10.9-15.3 21.4-10.8l-2.8 1.7c-5.5-2.2-15-0.6-18.6 9.1z"/>
+    <path d="m77.6 52.6 8.9-10.5-4.7 6.5c4.5-0.4 10-3.5 12.6-10.5-0.9 7.6-9 15.4-16.8 14.3v0.2z"/>
+    <path d="m77.6 52.7c10.2 0.9 19.6-8.8 17.9-20.9l2.6-3.9c3.2 8.3-0.4 19.4-10.3 23.5-3.6 1.7-7.8 1.9-10.2 1.3z"/>
+  </g></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+</svg>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

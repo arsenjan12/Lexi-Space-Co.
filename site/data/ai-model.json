@@ -1,0 +1,69 @@
+{
+  "name": "LexiAI 1.5B",
+  "url": "models/lexi-ai-1.5b-q5_k_m-00001-of-00013.gguf",
+  "parts": 13,
+  "sizeMB": 1073,
+  "base": "Qwen2.5-1.5B-Instruct",
+  "method": "QLoRA, обучено на базе LEXI Space",
+  "quant": "Q5_K_M",
+  "llama_cpp": "b11716",
+  "trained": "2026-10-18",
+  "release": {
+    "repo": "f4ckpy/Lexi-Space-Co",
+    "tag": "lexiai-v3",
+    "files": [
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00001-of-00013.gguf",
+        "size": 5937664
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00002-of-00013.gguf",
+        "size": 191439552
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00003-of-00013.gguf",
+        "size": 92751904
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00004-of-00013.gguf",
+        "size": 88985600
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00005-of-00013.gguf",
+        "size": 87163936
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00006-of-00013.gguf",
+        "size": 94879584
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00007-of-00013.gguf",
+        "size": 88714144
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00008-of-00013.gguf",
+        "size": 88985632
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00009-of-00013.gguf",
+        "size": 88991808
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00010-of-00013.gguf",
+        "size": 94931808
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00011-of-00013.gguf",
+        "size": 90594208
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00012-of-00013.gguf",
+        "size": 92745760
+      },
+      {
+        "name": "lexi-ai-1.5b-q5_k_m-00013-of-00013.gguf",
+        "size": 18929952
+      }
+    ]
+  }
+}
