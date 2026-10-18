@@ -187,7 +187,7 @@ function kalmanStep(pos) {
     { eps, threshold: CHI2_THR, n: kf.n, anomalies: kf.anomalies, accuracy, jumpM: Math.hypot(nu[0], nu[1]) });
 }
 
-onPosition(pos => kalmanStep(pos));
+onPosition(pos => { if (pos) kalmanStep(pos); });   // null — точку выбрали вручную, фильтру нечего считать
 
 // Состояние «ask» меняется, когда пользователь разрешит геолокацию
 export function geoDenied() { set('i_ekf_position', 'na', t('ind.na')); }
