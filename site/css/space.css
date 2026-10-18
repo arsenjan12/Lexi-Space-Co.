@@ -342,14 +342,24 @@ button.chip[aria-pressed="false"]{ opacity:.45; }
 .city-list{ display:flex; flex-wrap:wrap; gap:6px; margin:.4rem 0 0; }
 .ai-model .lowmem{ display:block; margin-top:6px; color:var(--amber); }
 
-/* ---------- переход на портал LEXI: золотая вспышка, как на самом портале ---------- */
-#warp{ position:fixed; inset:0; z-index:95; pointer-events:none; opacity:0; display:grid; place-items:center; transition:opacity .5s ease;
-  background:radial-gradient(circle at 50% 50%, rgba(255,246,220,.97) 0%, rgba(236,211,145,.6) 18%, rgba(5,5,8,0) 62%); }
-#warp::before{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%, transparent 0, transparent 30%, rgba(5,6,10,.85) 75%);
-  transform:scale(2.2); transition:transform 1.3s cubic-bezier(.6,0,.2,1); }
-#warp.on{ opacity:1; pointer-events:auto; transition:opacity 1s ease .2s; }
-#warp.on::before{ transform:scale(.35); }
+/* ---------- переход на портал LEXI: из центра раскрывается золотой свет, как на самом портале ---------- */
+#warp{ position:fixed; inset:0; z-index:95; pointer-events:none; opacity:0; overflow:hidden; display:grid; place-items:center;
+  background:rgba(5,6,10,0); transition:opacity .35s ease, background 1.2s ease; }
+/* круг, а не прямоугольник: края растворяются в прозрачность, поэтому их не видно ни на каком этапе */
+#warp::before{ content:""; position:absolute; left:50%; top:50%; width:170vmax; height:170vmax; margin:-85vmax 0 0 -85vmax; border-radius:50%;
+  background:radial-gradient(circle, #fff8e6 0%, rgba(255,236,190,.95) 9%, rgba(236,211,145,.6) 22%, rgba(196,157,71,.22) 38%, rgba(196,157,71,0) 60%);
+  transform:scale(.04); transition:transform 1.35s cubic-bezier(.7,0,.25,1); }
+#warp.on{ opacity:1; pointer-events:auto; background:rgba(5,6,10,.6); }
+#warp.on::before{ transform:scale(1.7); }
 #warp p{ position:relative; font:600 12px/1.4 var(--sans); letter-spacing:.32em; text-transform:uppercase; color:#1a1204; text-align:center; padding:0 20px;
-  opacity:0; transform:translateY(8px); transition:opacity .6s ease .5s, transform .8s var(--ease) .5s; }
+  opacity:0; transform:translateY(8px); transition:opacity .6s ease .55s, transform .8s var(--ease) .55s; }
 #warp.on p{ opacity:1; transform:none; }
 body.leaving .top, body.leaving .hud, body.leaving .dock, body.leaving .ai-fab, body.leaving .labels{ opacity:0; transition:opacity .5s ease; }
+.ai-model .note{ display:block; margin-top:6px; color:var(--faint); font-size:11.5px; }
+/* кольцо прогресса на кнопке LexiAI, пока нейросеть скачивается */
+.ai-fab.busy::before{ content:""; position:absolute; inset:-4px; border-radius:999px; padding:2px; pointer-events:none;
+  background:conic-gradient(var(--gold-hi) var(--p, 0%), rgba(var(--gold-rgb),.18) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+
+/* плашка «Powered by Netlify» — скрыта */
+#nl-badge-frame{ display:none !important; }
