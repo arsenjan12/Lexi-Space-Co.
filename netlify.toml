@@ -28,7 +28,7 @@
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
-# Модель LexiAI берёт и LEXI Messenger (отдельный сайт lexi-messenger.netlify.app):
+# Модель LexiAI берёт и LEXI Messenger (отдельный сайт lexi-messenger.netlify.app, папка «Lexi messenger»):
 # разрешаем ему читать файлы модели и её описание, в том числе частями (Range)
 [[headers]]
   for = "/models/*"
