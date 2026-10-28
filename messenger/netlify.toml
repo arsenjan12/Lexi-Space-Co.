@@ -1,0 +1,23 @@
+# LEXI Messenger — отдельный сайт на Netlify из того же репозитория.
+# В настройках сайта на Netlify: Base directory = messenger (остальное берётся отсюда).
+#
+# Сборка копирует общие файлы LEXI Space (библиотеки, шрифты, текстуры, база знаний)
+# в site/space. Нейросеть не копируется: её файлы мессенджер берёт с lexi-space.netlify.app.
+
+[build]
+  command = "node scripts/build.mjs"
+  publish = "site"
+
+# Изоляция страницы: нужна, чтобы нейросеть работала в несколько потоков
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "credentialless"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/space/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

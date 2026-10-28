@@ -13,6 +13,8 @@ ai/cache/
 ai/out/
 # Модель LexiAI лежит в GitHub Releases, Netlify скачивает её при сборке
 site/models/*.gguf
+# Мессенджер: общие файлы LEXI Space, копируются при сборке (messenger/scripts/build.mjs)
+messenger/site/space/
 
 # Локальное
 .claude/
