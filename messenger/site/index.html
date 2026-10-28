@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru" data-lexi-theme="gold">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEXI Messenger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#05060a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='54 8 53 50'%3E%3Cg fill='%23C49D47'%3E%3Cpath d='m55.5 49 28.2-25.1c2.3-1.9 7.8-5.6 11.1-7.5-3.4 3.9-29.6 29.4-29.6 29.4l-9.7 3.2z'/%3E%3Cpath d='m57.1 56 26.5-25.1 22.1-21.6c-1.3 2.5-3.7 6.7-6.2 9.3l-31 32.5-11.4 4.9z'/%3E%3Cpath d='m66.4 56 12.3-12.2 22.1-23.4c-1.7 3.6-5.6 9.5-7.5 11.8-4.6 5.6-18.2 20-18.2 20l-8.8 3.8h0.1z'/%3E%3Cpath d='m62.9 40.5c-0.7-1.6-1.1-4.3-1-6.8 0.5-9.8 9.7-19.6 22.7-18.3-11.1-1.4-19.8 9.6-18.7 18.8 0.1 2.1 8-4.6 10.5-6.3-2.5 2.7-13 12-13.5 12.6z'/%3E%3Cpath d='m77.6 52.7c10.2 0.9 19.6-8.8 17.9-20.9l2.6-3.9c3.2 8.3-0.4 19.4-10.3 23.5-3.6 1.7-7.8 1.9-10.2 1.3z'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="space/css/fonts.css">
+<link rel="stylesheet" href="space/vendor/katex.min.css">
+<link rel="stylesheet" href="css/messenger.css">
+<script type="importmap">
+{ "imports": { "three": "./space/vendor/three.module.js", "lexi-space/": "./space/" } }
+</script>
+</head>
+<body>
+
+<!-- фон: планета (3D или 2D) и затемнение, когда открыт чат -->
+<canvas id="bg3d" class="bg" aria-hidden="true"></canvas>
+<canvas id="bg2d" class="bg" aria-hidden="true" hidden></canvas>
+<div id="bg-dim" aria-hidden="true"></div>
+
+<!-- загрузка -->
+<section id="boot" class="screen" aria-label="LEXI Messenger">
+  <canvas aria-hidden="true"></canvas>
+  <div class="boot-word"><span>Lexi</span><i class="gap"></i><span>Messenger</span></div>
+</section>
+
+<!-- первый вход -->
+<section id="onboard" class="screen" hidden>
+  <canvas id="orbit3d" class="bg" aria-hidden="true"></canvas>
+  <canvas id="orbit2d" class="bg" aria-hidden="true" hidden></canvas>
+  <div class="ob-lang lang glass" role="group" aria-label="Язык"><button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button></div>
+
+  <div class="ob-step" data-step="hello">
+    <h1 class="hello mono" id="hello-type">HELLO WORLD!</h1>
+    <svg class="tether" aria-hidden="true"><line id="tether" x1="0" y1="0" x2="0" y2="0"/></svg>
+    <div class="tablet glass" id="tablet">
+      <p class="tablet-h" data-i18n="ob.interests">Что вам интересно?</p>
+      <div class="chips" id="interests" role="group"></div>
+      <button type="button" class="btn-gold" id="to-profile" data-i18n="ob.next">Далее</button>
+    </div>
+  </div>
+
+  <div class="ob-step" data-step="profile" hidden>
+    <div class="spaceid glass" aria-hidden="true"><span class="vlabel">Space ID</span><div id="id-card"></div></div>
+    <form class="pform glass" id="pform" autocomplete="off">
+      <p class="pform-h" data-i18n="ob.profile">Профиль</p>
+      <label class="photo" id="pf-photo-btn"><input type="file" id="pf-photo" accept="image/*" hidden><span id="pf-photo-view"></span></label>
+      <label class="field"><span data-i18n="pf.name">Имя</span><input class="inp" id="pf-name" maxlength="48" required></label>
+      <label class="field"><span data-i18n="pf.handle">Позывной</span><input class="inp" id="pf-handle" maxlength="24"></label>
+      <label class="field"><span data-i18n="pf.role">Роль</span><input class="inp" id="pf-role" maxlength="60"></label>
+      <label class="field"><span data-i18n="pf.org">Организация</span><input class="inp" id="pf-org" maxlength="80"></label>
+      <div class="row-end"><button type="button" class="btn-line" id="pf-back" data-i18n="ob.back">Назад</button><button type="submit" class="btn-gold" data-i18n="ob.next">Далее</button></div>
+    </form>
+  </div>
+
+  <div class="ob-step" data-step="welcome" hidden>
+    <div class="welcome">
+      <h1><span data-i18n="ob.welcome">Добро пожаловать в</span> <em>Lexi Messenger</em></h1>
+      <button type="button" class="btn-gold big" id="enter" data-i18n="ob.enter">Войти</button>
+      <p class="conn-status" id="conn-status" aria-live="polite"></p>
+      <button type="button" class="tiny-link" id="enter-demo" data-i18n="ob.demo">демо</button>
+    </div>
+  </div>
+</section>
+
+<!-- приложение -->
+<div id="app" hidden>
+  <header class="top">
+    <button type="button" class="icon-btn m-back" id="m-back" aria-label="Назад" hidden><svg class="ico"><use href="#i-back"/></svg></button>
+    <a class="brand" href="#" id="brand"><svg viewBox="0 0 53 50" aria-hidden="true"><use href="#mark" width="53" height="50"/></svg><b>Lexi <i>Messenger</i></b></a>
+    <nav class="capsule glass" id="tabs" aria-label="Разделы">
+      <button type="button" data-tab="threads"># <span data-i18n="tab.threads">Ветки</span></button>
+      <button type="button" data-tab="channels" data-i18n="tab.channels">Каналы</button>
+      <button type="button" data-tab="chats" data-i18n="tab.chats">Чаты</button>
+      <button type="button" data-tab="all" data-i18n="tab.all">All</button>
+      <button type="button" data-tab="unread"><span data-i18n="tab.unread">Unread</span><b class="n" id="unread-n" hidden></b></button>
+      <button type="button" data-tab="ai" data-i18n="tab.ai">LexiAI</button>
+      <button type="button" data-tab="edit" data-i18n="tab.edit">Edit</button>
+    </nav>
+    <div class="top-r">
+      <label class="search glass"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg><input id="search" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="search" placeholder="Поиск"></label>
+      <button type="button" class="icon-btn" id="bell" data-i18n-aria="notif" aria-label="Уведомления"><svg class="ico"><use href="#i-bell"/></svg><i class="dot-n" id="bell-n" hidden></i></button>
+      <button type="button" class="avatar me" id="me-btn" aria-label="Профиль и настройки"></button>
+    </div>
+  </header>
+
+  <div class="shell" id="shell">
+    <nav class="rail" id="rail" aria-label="Чаты и люди"></nav>
+    <aside class="list" id="list">
+      <div class="list-head"><span data-i18n="list.title">Topics / chats</span><button type="button" class="icon-btn" id="new-chat" aria-label="Создать"><svg class="ico"><use href="#i-plus"/></svg></button></div>
+      <div class="list-items" id="list-items"></div>
+    </aside>
+    <main class="stage" id="stage">
+      <button type="button" class="planet-name" id="planet-name" hidden></button>
+      <p class="home-hint" id="home-hint" data-i18n="home.pick">Выберите чат</p>
+      <section class="card glass" id="card" hidden></section>
+    </main>
+    <aside class="toolbar glass" id="toolbar" hidden aria-label="Инструменты"></aside>
+    <button type="button" class="tools-btn glass" id="tools-btn" aria-expanded="false"><span data-i18n="tools">TOOLS</span><svg class="ico"><use href="#i-up"/></svg></button>
+  </div>
+  <div id="windows"></div>
+</div>
+
+<div id="pop-slot"></div>
+<div id="modal-slot"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- жидкое стекло: лёгкое преломление фона за панелями (Chromium) -->
+  <filter id="lg" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="7" result="n"/>
+    <feGaussianBlur in="n" stdDeviation="2" result="nb"/>
+    <feDisplacementMap in="SourceGraphic" in2="nb" scale="38" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <symbol id="mark" viewBox="54 8 53 50"><g fill="currentColor">
+    <path d="m55.5 49 28.2-25.1c2.3-1.9 7.8-5.6 11.1-7.5-3.4 3.9-29.6 29.4-29.6 29.4l-9.7 3.2z"/>
+    <path d="m57.1 56 26.5-25.1 22.1-21.6c-1.3 2.5-3.7 6.7-6.2 9.3l-31 32.5-11.4 4.9z"/>
+    <path d="m66.4 56 12.3-12.2 22.1-23.4c-1.7 3.6-5.6 9.5-7.5 11.8-4.6 5.6-18.2 20-18.2 20l-8.8 3.8h0.1z"/>
+    <path d="m62.9 40.5c-0.7-1.6-1.1-4.3-1-6.8 0.5-9.8 9.7-19.6 22.7-18.3-11.1-1.4-19.8 9.6-18.7 18.8 0.1 2.1 8-4.6 10.5-6.3-2.5 2.7-13 12-13.5 12.6z"/>
+    <path d="m67.5 28.8c1.6-7.9 10.9-15.3 21.4-10.8l-2.8 1.7c-5.5-2.2-15-0.6-18.6 9.1z"/>
+    <path d="m77.6 52.6 8.9-10.5-4.7 6.5c4.5-0.4 10-3.5 12.6-10.5-0.9 7.6-9 15.4-16.8 14.3v0.2z"/>
+    <path d="m77.6 52.7c10.2 0.9 19.6-8.8 17.9-20.9l2.6-3.9c3.2 8.3-0.4 19.4-10.3 23.5-3.6 1.7-7.8 1.9-10.2 1.3z"/>
+  </g></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-thread" viewBox="0 0 24 24"><path d="M6 4v9a4 4 0 0 0 4 4h8M14 13l4 4-4 4"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M14 5l7 7-7 7M21 12H9a6 6 0 0 0-6 6v1"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/></symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24"><path d="M12 2.5l2.4 1.8 3-.3 1 2.8 2.6 1.6-.7 2.9 1.2 2.7-2.3 2 .1 3-2.9.6-1.6 2.6-2.8-1L12 21.5l-2.4-1.8-3 .3-1-2.8-2.6-1.6.7-2.9-1.2-2.7 2.3-2-.1-3 2.9-.6L9.2 2.9l2.8 1z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11.5 12.4 19a5 5 0 0 1-7.1-7.1l7.6-7.6a3.3 3.3 0 0 1 4.7 4.7l-7.6 7.6a1.7 1.7 0 0 1-2.4-2.4l7-7"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></symbol>
+  <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M18 5H6l6 7-6 7h12"/></symbol>
+  <symbol id="i-robot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-scope" viewBox="0 0 24 24"><path d="m3 13 12-6 2 4-12 6zM15 7l3-1.5 2 4-3 1.5M9 16l-2 5M11 15l2 6"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 3c3 2 5 6 4 11l-4 3-4-3c-1-5 1-9 4-11zM9 17l-2 4M15 17l2 4M12 9v.5"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v8"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 9-5.2M18 11v5l1.5 2H8M3 3l18 18"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+</svg>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
